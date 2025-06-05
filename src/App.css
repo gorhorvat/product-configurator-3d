@@ -1,0 +1,78 @@
+/* Root container */
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Header controls */
+.controls {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.controls h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+/* Color controls panel */
+.color-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-group label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.control-group input[type="color"] {
+  width: 60px;
+  height: 30px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.control-group input[type="color"]:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.control-group input[type="color"]:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.6);
+}
