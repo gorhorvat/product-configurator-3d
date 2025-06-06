@@ -32,12 +32,12 @@ jobs:
       
     - name: Run linting
       run: npm run lint
-      
     - name: Build
       run: npm run build
       env:
         VITE_BASE_PATH: /product-configurator-3d/
-          - name: Deploy to GitHub Pages
+        
+    - name: Deploy to GitHub Pages
       if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v4
       with:
