@@ -1,9 +1,9 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, SoftShadows } from '@react-three/drei'
-import { Suspense, useState, useCallback } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Configurator } from './Configurator.tsx'
-import { ColorControls } from './ColorControls.tsx'
-import type { Colors } from './Configurator'
+import { ColorControls, type DynamicColors } from './ColorControls.tsx'
+import { ModelSelector, MODEL_PRESETS } from './ModelSelector.tsx'
 
 // Loading fallback component
 function LoadingFallback() {
@@ -21,16 +21,22 @@ function Shadows() {
 }
 
 export function Scene() {
-  const [colors, setColors] = useState<Colors>({
-    BACK_PLATE: '#ffffff',
-    BUTTONS: '#303030',
-    FRONT_PLATE: '#ffffff'
-  })
+  // Always use the PS5 controller (the only model available)
+  const currentModel = MODEL_PRESETS[0]
+  const [colors, setColors] = useState<DynamicColors>({})
 
-  const handleColorChange = useCallback((newColors: Colors) => {
-    setColors(newColors)
+  // Initialize colors when component mounts
+  useEffect(() => {
+    const initialColors: DynamicColors = {}
+    currentModel.materials.forEach(material => {
+      initialColors[material.id] = material.defaultColor
+    })
+    setColors(initialColors)
   }, [])
 
+  const handleColorChange = useCallback((newColors: DynamicColors) => {
+    setColors(newColors)
+  }, [])
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
       <Canvas
@@ -41,7 +47,8 @@ export function Scene() {
           alpha: false,
           depth: true,
           preserveDrawingBuffer: true
-        }}>        <Suspense fallback={<LoadingFallback />}>
+        }}>
+        <Suspense fallback={<LoadingFallback />}>
           <Shadows />
           <Environment preset="studio" />
           <ambientLight intensity={0.3} />
@@ -56,7 +63,7 @@ export function Scene() {
             intensity={0.5}
             castShadow
           />
-          <Configurator colors={colors} />
+          <Configurator colors={colors} modelPreset={currentModel} />
           <OrbitControls
             autoRotate={false}
             minPolarAngle={Math.PI / 4}
@@ -64,9 +71,13 @@ export function Scene() {
             minDistance={1.5}
             maxDistance={4}
           />
-        </Suspense>
-      </Canvas>
-      <ColorControls onChange={handleColorChange} />
+        </Suspense>      </Canvas>
+      <ModelSelector />
+      <ColorControls 
+        materials={currentModel.materials}
+        onChange={handleColorChange}
+        initialColors={colors}
+      />
     </div>
   )
 }

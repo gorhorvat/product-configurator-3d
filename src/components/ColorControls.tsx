@@ -1,37 +1,51 @@
-import { useState, useCallback } from 'react'
-import type { Colors } from './Configurator'
+import { useState, useCallback, useEffect } from 'react'
+import type { MaterialConfig } from './ModelSelector'
+
+export type DynamicColors = Record<string, string>
 
 interface ColorControlsProps {
-  onChange: (colors: Colors) => void
+  materials: MaterialConfig[]
+  onChange: (colors: DynamicColors) => void
+  initialColors?: DynamicColors
 }
 
-const CONTROL_LABELS: Record<keyof Colors, string> = {
-  BACK_PLATE: 'Back Plate',
-  BUTTONS: 'Buttons',
-  FRONT_PLATE: 'Front Plate'
-}
+export function ColorControls({ materials, onChange, initialColors }: ColorControlsProps) {
+  // Initialize colors from materials' default colors
+  const getInitialColors = useCallback(() => {
+    const colors: DynamicColors = {}
+    materials.forEach(material => {
+      colors[material.id] = initialColors?.[material.id] || material.defaultColor
+    })
+    return colors
+  }, [materials, initialColors])
 
-export function ColorControls({ onChange }: ColorControlsProps) {
-  const [colors, setColors] = useState<Colors>({
-    BACK_PLATE: '#ffffff',
-    BUTTONS: '#303030',
-    FRONT_PLATE: '#ffffff'
-  })
+  const [colors, setColors] = useState<DynamicColors>(getInitialColors())
 
-  const handleColorChange = useCallback((part: keyof Colors, color: string) => {
-    const newColors = { ...colors, [part]: color }
+  // Update colors when materials change (model switch)
+  useEffect(() => {
+    const newColors = getInitialColors()
+    setColors(newColors)
+    onChange(newColors)
+  }, [materials, getInitialColors, onChange])
+
+  const handleColorChange = useCallback((materialId: string, color: string) => {
+    const newColors = { ...colors, [materialId]: color }
     setColors(newColors)
     onChange(newColors)
   }, [colors, onChange])
+
   return (
     <div className="color-controls">
-      {(Object.keys(CONTROL_LABELS) as Array<keyof Colors>).map((part) => (
-        <div key={part} className="control-group">
-          <label>{CONTROL_LABELS[part]}</label>
+      {materials.map((material) => (
+        <div key={material.id} className="control-group">
+          <label>
+            <span className="material-name">{material.name}</span>
+            <span className="material-description">{material.description}</span>
+          </label>
           <input
             type="color"
-            value={colors[part]}
-            onChange={(e) => handleColorChange(part, e.target.value)}
+            value={colors[material.id] || material.defaultColor}
+            onChange={(e) => handleColorChange(material.id, e.target.value)}
           />
         </div>
       ))}

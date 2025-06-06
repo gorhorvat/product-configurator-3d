@@ -3,32 +3,23 @@ import { Group, Color } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
 import { Text } from '@react-three/drei'
-
-// Define material IDs for different parts
-const MATERIAL_IDS = {
-  BUTTONS: '1001',      // Main buttons and D-pad
-  BACK_PLATE: '1002',   // Controller back plate
-  FRONT_PLATE: '1011'   // Front plate and light bar
-} as const
-
-type MaterialKey = keyof typeof MATERIAL_IDS
-export type Colors = Record<MaterialKey, string>
+import type { ModelPreset } from './ModelSelector'
+import type { DynamicColors } from './ColorControls'
 
 interface ConfiguratorProps {
-  colors?: Partial<Colors>
+  colors?: DynamicColors
+  modelPreset?: ModelPreset
 }
 
-// Default colors
-const DEFAULT_COLORS: Colors = {
-  BACK_PLATE: '#ffffff',
-  BUTTONS: '#303030',
-  FRONT_PLATE: '#ffffff'
-}
-
-export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
+export function Configurator({ colors = {}, modelPreset }: ConfiguratorProps) {
   const group = useRef<Group>(null)
-  const [hovered, setHovered] = useState(false)  // Load the 3D model with correct base path for GitHub Pages
-  const modelPath = import.meta.env.BASE_URL + 'models/playstation_5_dualsense/scene.gltf'
+  const [hovered, setHovered] = useState(false)
+  
+  // Use model preset path if provided, otherwise use default PS5 controller
+  const modelPath = modelPreset 
+    ? import.meta.env.BASE_URL + modelPreset.path
+    : import.meta.env.BASE_URL + 'models/playstation_5_dualsense/scene.gltf'
+  
   const { scene } = useGLTF(modelPath)
 
   // Handle model rotation
@@ -37,21 +28,10 @@ export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
       group.current.rotation.y += delta * 0.2
     }
   })
+  
   // Update materials when colors change or on hover
   useEffect(() => {
-    if (!scene) return
-    
-    // Optimized material detection function
-    const getMaterialPart = (materialName: string): MaterialKey | null => {
-      const lowerName = materialName.toLowerCase()
-      
-      // Check for specific material IDs using the constant
-      if (lowerName.includes(MATERIAL_IDS.FRONT_PLATE)) return 'FRONT_PLATE'
-      if (lowerName.includes(MATERIAL_IDS.BACK_PLATE)) return 'BACK_PLATE'
-      if (lowerName.includes(MATERIAL_IDS.BUTTONS)) return 'BUTTONS'
-      
-      return null
-    }
+    if (!scene || !modelPreset) return
     
     scene.traverse((child) => {
       // Type guard to check if object is a mesh with material
@@ -70,26 +50,36 @@ export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
           mesh.castShadow = true
           mesh.receiveShadow = true
 
-          // Find which part this mesh belongs to
+          // Find matching material configuration
           const materialName = mesh.material.name
-          const partKey = getMaterialPart(materialName)
-
-          if (partKey) {
-            // Update color when colors prop changes
-            const currentColor = colors[partKey] || DEFAULT_COLORS[partKey]
-            const newColor = new Color(currentColor)
+          const materialConfig = modelPreset.materials.find(m => m.id === materialName)
+          
+          if (materialConfig) {
+            // Use the color from colors prop, or fall back to default
+            const currentColor = colors[materialConfig.id] || materialConfig.defaultColor
+            const finalColor = new Color(currentColor)
             
             // Apply hover effect
             if (hovered) {
-              newColor.multiplyScalar(1.2)
+              finalColor.multiplyScalar(1.2)
             }
             
             // Update the material color
-            mesh.material.color.copy(newColor)
+            mesh.material.color.copy(finalColor)
 
-            // Apply material properties
-            mesh.material.metalness = 0.5
-            mesh.material.roughness = 0.2
+            // Apply material properties based on material type
+            if (materialConfig.id === 'glass') {
+              // Special handling for glass materials
+              mesh.material.transparent = true
+              mesh.material.opacity = 0.8
+              mesh.material.metalness = 0.9
+              mesh.material.roughness = 0.1
+            } else {
+              // Standard material properties
+              mesh.material.metalness = 0.5
+              mesh.material.roughness = 0.2
+            }
+            
             mesh.material.envMapIntensity = hovered ? 1.5 : 1
 
             // Handle texture maps if they exist
@@ -107,7 +97,7 @@ export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
         }
       }
     })
-  }, [scene, hovered, colors])
+  }, [scene, hovered, colors, modelPreset])
 
   if (!scene) {
     return (
@@ -128,8 +118,9 @@ export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
       ref={group}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
-      rotation={[0.2, 0, 0]}
-      scale={[2, 2, 2]}
+      rotation={modelPreset?.rotation || [0.2, 0, 0]}
+      scale={modelPreset?.scale || [2, 2, 2]}
+      position={modelPreset?.position || [0, 0, 0]}
     >
       <primitive object={scene} />
     </group>
