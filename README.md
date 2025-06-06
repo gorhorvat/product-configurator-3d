@@ -103,7 +103,7 @@ npm run preview  # Test the build locally
 ## Live Demo
 
 Once deployed, your app will be available at:
-`https://yourusername.github.io/product-configurator-3d/`
+[Product configurator 3D live page](https://gorhorvat.github.io/product-configurator-3d/)
 
 ## License
 
