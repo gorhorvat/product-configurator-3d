@@ -8,7 +8,7 @@ interface ColorControlsProps {
 const CONTROL_LABELS: Record<keyof Colors, string> = {
   BACK_PLATE: 'Back Plate',
   BUTTONS: 'Buttons',
-  FRONT_PLATE: 'Front Plate'
+  FRONT_PLATE: 'Front Plates'
 }
 
 export function ColorControls({ onChange }: ColorControlsProps) {
