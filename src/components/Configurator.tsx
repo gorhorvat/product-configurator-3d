@@ -27,10 +27,9 @@ const DEFAULT_COLORS: Colors = {
 
 export function Configurator({ colors = DEFAULT_COLORS }: ConfiguratorProps) {
   const group = useRef<Group>(null)
-  const [hovered, setHovered] = useState(false)
-  
-  // Load the 3D model
-  const { scene } = useGLTF('/models/playstation_5_dualsense/scene.gltf')
+  const [hovered, setHovered] = useState(false)  // Load the 3D model with correct base path for GitHub Pages
+  const modelPath = import.meta.env.BASE_URL + 'models/playstation_5_dualsense/scene.gltf'
+  const { scene } = useGLTF(modelPath)
 
   // Handle model rotation
   useFrame((_, delta) => {

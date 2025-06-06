@@ -22,3 +22,13 @@ declare module '*.jpeg' {
   const content: string
   export default content
 }
+
+// Vite environment variables
+interface ImportMetaEnv {
+  readonly BASE_URL: string
+  readonly VITE_BASE_PATH?: string
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv
+}
