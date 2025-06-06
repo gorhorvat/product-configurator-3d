@@ -13,8 +13,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
-      
-    - name: Setup Node.js
+        - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
@@ -25,7 +24,8 @@ jobs:
       
     - name: Run type check
       run: npm run type-check
-        - name: Run linting
+      
+    - name: Run linting
       run: npm run lint
       
     - name: Build
