@@ -1,3 +1,5 @@
+import type { DynamicColors } from './ColorControls'
+
 // Define material configuration for each model
 export interface MaterialConfig {
   id: string
@@ -15,6 +17,10 @@ export interface ModelPreset {
   scale?: [number, number, number]
   rotation?: [number, number, number]
   position?: [number, number, number]
+}
+
+interface ModelSelectorProps {
+  currentColors?: DynamicColors
 }
 
 export const MODEL_PRESETS: ModelPreset[] = [  {
@@ -72,7 +78,7 @@ export const MODEL_PRESETS: ModelPreset[] = [  {
   }
 ]
 
-export function ModelSelector() {
+export function ModelSelector({ currentColors = {} }: ModelSelectorProps) {
   const currentModel = MODEL_PRESETS[0] // Always use PS5 controller since it's the only one
 
   return (
@@ -89,7 +95,7 @@ export function ModelSelector() {
               <div
                 key={material.id}
                 className="color-dot"
-                style={{ backgroundColor: material.defaultColor }}
+                style={{ backgroundColor: currentColors[material.id] || material.defaultColor }}
                 title={material.name}
               />
             ))}

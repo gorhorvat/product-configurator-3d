@@ -5,6 +5,7 @@ import { Configurator } from './Configurator.tsx'
 import { ColorControls, type DynamicColors } from './ColorControls.tsx'
 import { ModelSelector, MODEL_PRESETS } from './ModelSelector.tsx'
 import { ExplodeControls } from './ExplodeControls.tsx'
+import { Toolbar } from './Toolbar.tsx'
 
 // Loading fallback component
 function LoadingFallback() {
@@ -31,10 +32,10 @@ export function Scene() {
     currentModel.materials.forEach(material => {
       initialColors[material.id] = material.defaultColor
     })
-    return initialColors
-  })
+    return initialColors  })
   const [explodeAmount, setExplodeAmount] = useState(0)
-
+  const [explodeViewEnabled, setExplodeViewEnabled] = useState(false)
+  const [autoRotateEnabled, setAutoRotateEnabled] = useState(true)
   const handleColorChange = useCallback((newColors: DynamicColors) => {
     setColors(newColors)
   }, [])
@@ -42,8 +43,33 @@ export function Scene() {
   const handleExplodeChange = useCallback((newExplodeAmount: number) => {
     setExplodeAmount(newExplodeAmount)
   }, [])
+  const handleExplodeViewToggle = useCallback((enabled: boolean) => {
+    setExplodeViewEnabled(enabled)
+    // Reset explode amount when disabling explode view
+    if (!enabled) {
+      setExplodeAmount(0)
+    }
+  }, [])
+  const handleResetColors = useCallback(() => {
+    const defaultColors: DynamicColors = {}
+    currentModel.materials.forEach(material => {
+      defaultColors[material.id] = material.defaultColor
+    })
+    setColors(defaultColors)
+  }, [currentModel.materials])
+
+  const handleAutoRotateToggle = useCallback((enabled: boolean) => {
+    setAutoRotateEnabled(enabled)
+  }, [])
+  
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ width: '100vw', height: '100vh' }}>      <Toolbar 
+        explodeViewEnabled={explodeViewEnabled}
+        onExplodeViewToggle={handleExplodeViewToggle}
+        autoRotateEnabled={autoRotateEnabled}
+        onAutoRotateToggle={handleAutoRotateToggle}
+        onResetColors={handleResetColors}
+      />
       <Canvas
         shadows
         camera={{ position: [0, 0.2, 2], fov: 45 }}
@@ -69,7 +95,8 @@ export function Scene() {
             castShadow
           />
           <Configurator colors={colors} modelPreset={currentModel} explodeAmount={explodeAmount} />          <OrbitControls
-            autoRotate={false}
+            autoRotate={autoRotateEnabled}
+            autoRotateSpeed={1.0}
             minPolarAngle={Math.PI / 6}
             maxPolarAngle={Math.PI / 1.2}
             minDistance={1.0}
@@ -78,11 +105,13 @@ export function Scene() {
             dampingFactor={0.05}
           />
         </Suspense>      </Canvas>
-      <ModelSelector />
-      <ExplodeControls 
-        onExplodeChange={handleExplodeChange}
-        initialExplode={explodeAmount}
-      />
+      <ModelSelector currentColors={colors} />
+      {explodeViewEnabled && (
+        <ExplodeControls 
+          onExplodeChange={handleExplodeChange}
+          initialExplode={explodeAmount}
+        />
+      )}
       <ColorControls 
         materials={currentModel.materials}
         onChange={handleColorChange}

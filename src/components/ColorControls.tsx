@@ -25,19 +25,21 @@ export function ColorControls({ materials, onChange, initialColors }: ColorContr
   useEffect(() => {
     setColors(initialColorsState)
   }, [initialColorsState])
-
-  // Notify parent of color changes only when colors actually change
+  // Notify parent of color changes with debouncing to prevent rapid updates
   useEffect(() => {
-    // Only call onChange if colors have actually changed from initial state
-    const hasChanged = Object.keys(colors).some(key => 
-      colors[key] !== initialColorsState[key]
-    )
-    
-    if (hasChanged || Object.keys(colors).length > 0) {
-      onChange(colors)
-    }
-  }, [colors]) // Remove onChange from dependencies to prevent infinite loop
+    const timeoutId = setTimeout(() => {
+      // Only call onChange if colors have actually changed from initial state
+      const hasChanged = Object.keys(colors).some(key => 
+        colors[key] !== initialColorsState[key]
+      )
+      
+      if (hasChanged || Object.keys(colors).length > 0) {
+        onChange(colors)
+      }
+    }, 16) // ~60fps debouncing to prevent rapid fire updates
 
+    return () => clearTimeout(timeoutId)
+  }, [colors]) // Remove onChange from dependencies to prevent infinite loop
   const handleColorChange = useCallback((materialId: string, color: string) => {
     setColors(prevColors => ({
       ...prevColors,
@@ -45,25 +47,8 @@ export function ColorControls({ materials, onChange, initialColors }: ColorContr
     }))
   }, [])
 
-  const handleReset = useCallback(() => {
-    const defaultColors: DynamicColors = {}
-    materials.forEach(material => {
-      defaultColors[material.id] = material.defaultColor
-    })
-    setColors(defaultColors)
-  }, [materials])
-
   return (
     <div className="color-controls">
-      <div className="color-controls-header">
-        <button 
-          className="reset-button"
-          onClick={handleReset}
-          title="Reset all colors to defaults"
-        >
-          Reset Colors
-        </button>
-      </div>
       <div className="color-controls-grid">
         {materials.map((material) => (
           <div key={material.id} className="control-group">

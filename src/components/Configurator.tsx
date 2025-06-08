@@ -15,6 +15,9 @@ interface ConfiguratorProps {
 export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: ConfiguratorProps) {
   const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
+  const previousColorsRef = useRef<DynamicColors>({})
+  const previousHoveredRef = useRef<boolean>(false)
+  const previousExplodeAmountRef = useRef<number>(0)
   
   // Use model preset path if provided, otherwise use default PS5 controller
   const modelPath = modelPreset 
@@ -45,11 +48,23 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
     }
     
     return explodeMap[materialId] || [0, 0, 0]
-  }
-
-  // Update materials when colors change or on hover
+  }  // Update materials when colors change or on hover
   useEffect(() => {
     if (!scene || !modelPreset) return
+
+    // Check if colors actually changed to prevent unnecessary updates
+    const colorsChanged = JSON.stringify(colors) !== JSON.stringify(previousColorsRef.current)
+    const hoveredChanged = hovered !== previousHoveredRef.current
+    const explodeChanged = explodeAmount !== previousExplodeAmountRef.current
+    
+    if (!colorsChanged && !hoveredChanged && !explodeChanged) {
+      return // Skip update if nothing meaningful changed
+    }
+
+    // Update refs
+    previousColorsRef.current = { ...colors }
+    previousHoveredRef.current = hovered
+    previousExplodeAmountRef.current = explodeAmount
 
     scene.traverse((child) => {
       // Type guard to check if object is a mesh with material
@@ -58,7 +73,7 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const mesh = child as any
           
-          // Fix transparency and depth issues
+          // Fix transparency and depth issues FIRST
           mesh.material.transparent = false
           mesh.material.opacity = 1
           mesh.material.depthWrite = true
@@ -66,9 +81,7 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
 
           // Enable shadows
           mesh.castShadow = true
-          mesh.receiveShadow = true
-
-          // Find matching material configuration
+          mesh.receiveShadow = true          // Find matching material configuration
           const materialName = mesh.material.name
           const materialConfig = modelPreset.materials.find(m => m.id === materialName)
           
@@ -90,32 +103,53 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
               finalColor.multiplyScalar(1.2)
             }
 
-            // Check if this is a button material with base color texture
+            // Set base color immediately
+            mesh.material.color.copy(finalColor)
+
+            // Handle special material cases
             const isButtonMaterial = materialConfig.id === 'actionButtonsColor' || materialConfig.id === 'directionalButtonsColor'
             const hasBaseTexture = mesh.material.map !== null
             
             if (isButtonMaterial && hasBaseTexture) {
-              // For button materials with textures, tint while preserving icons
-              if (currentColor === 'transparent') {
-                mesh.material.color.setHex(0xffffff)
-                mesh.material.transparent = true
-                mesh.material.opacity = 1.0
-              } else {
-                mesh.material.color.copy(finalColor)
-                mesh.material.transparent = true
-                mesh.material.opacity = 1.0
-                mesh.material.alphaTest = 0.5
-                
-                if (mesh.material.map) {
-                  mesh.material.map.minFilter = THREE.LinearMipmapLinearFilter
-                  mesh.material.map.magFilter = THREE.LinearFilter
-                }
-              }
-            } else {
-              // Update the material color for non-button materials
-              mesh.material.color.copy(finalColor)
+              // For button materials with textures, handle transparency properly
+              mesh.material.transparent = false
+              mesh.material.opacity = 1.0
+              mesh.material.alphaTest = 0.0
               
-              // Handle emissive materials
+              if (mesh.material.map) {
+                mesh.material.map.minFilter = THREE.LinearMipmapLinearFilter
+                mesh.material.map.magFilter = THREE.LinearFilter
+              }            } else if (materialConfig.id === 'frontPlateSideMasksColor') {
+              // Special handling for front plate sides - be very explicit and stable
+              
+              // Set all properties in a specific order to prevent conflicts
+              mesh.material.transparent = false
+              mesh.material.opacity = 1.0
+              mesh.material.alphaTest = 0.0
+              mesh.material.depthWrite = true
+              mesh.material.depthTest = true
+              mesh.material.side = THREE.FrontSide
+              
+              // Material properties
+              mesh.material.metalness = 0.2
+              mesh.material.roughness = 0.3
+              
+              // Disable emissive properties that might cause flickering
+              if (mesh.material.emissive) {
+                mesh.material.emissive.setHex(0x000000)
+              }
+              if (mesh.material.emissiveIntensity !== undefined) {
+                mesh.material.emissiveIntensity = 0
+              }
+              
+              // Force disable any animation or dynamic properties
+              mesh.material.toneMapped = true
+              mesh.material.vertexColors = false
+              
+              // Ensure color is set last and only once per update
+              mesh.material.color.copy(finalColor)
+            } else {
+              // Handle emissive materials for other components
               if (mesh.material.emissiveMap || mesh.material.emissive) {
                 mesh.material.emissive.copy(finalColor)
                 mesh.material.emissive.multiplyScalar(0.3)
@@ -125,8 +159,8 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
                 }
               }
             }
-            
-            // Apply material properties based on material type
+
+            // Apply remaining material properties based on material type
             if (materialConfig.id === 'glass') {
               mesh.material.transparent = true
               mesh.material.opacity = 0.8
@@ -142,13 +176,15 @@ export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: Co
             } else if (materialConfig.id === 'actionButtonsColor' || materialConfig.id === 'directionalButtonsColor') {
               mesh.material.metalness = 0.1
               mesh.material.roughness = 0.9
-              mesh.material.transparent = true
-              mesh.material.alphaTest = 0.1
+              mesh.material.transparent = false
+              mesh.material.opacity = 1.0
+              mesh.material.alphaTest = 0.0
               
               if (mesh.material.normalMap) {
                 mesh.material.normalScale.set(1.2, 1.2)
               }
-            } else {
+            } else if (materialConfig.id !== 'frontPlateSideMasksColor') {
+              // Default properties for other materials (skip front plate sides as we handled it above)
               mesh.material.metalness = 0.5
               mesh.material.roughness = 0.2
             }
