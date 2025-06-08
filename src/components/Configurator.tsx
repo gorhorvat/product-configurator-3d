@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Group, Color } from 'three'
-import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 import { useGLTF } from '@react-three/drei'
 import { Text } from '@react-three/drei'
 import type { ModelPreset } from './ModelSelector'
@@ -9,30 +9,48 @@ import type { DynamicColors } from './ColorControls'
 interface ConfiguratorProps {
   colors?: DynamicColors
   modelPreset?: ModelPreset
+  explodeAmount?: number
 }
 
-export function Configurator({ colors = {}, modelPreset }: ConfiguratorProps) {
+export function Configurator({ colors = {}, modelPreset, explodeAmount = 0 }: ConfiguratorProps) {
   const group = useRef<Group>(null)
   const [hovered, setHovered] = useState(false)
   
   // Use model preset path if provided, otherwise use default PS5 controller
   const modelPath = modelPreset 
     ? import.meta.env.BASE_URL + modelPreset.path
-    : import.meta.env.BASE_URL + 'models/playstation_5_dualsense/scene.gltf'
+    : import.meta.env.BASE_URL + 'models/playstation_5_dualsense/dualsense_controller.gltf'
   
   const { scene } = useGLTF(modelPath)
 
-  // Handle model rotation
-  useFrame((_, delta) => {
-    if (group.current) {
-      group.current.rotation.y += delta * 0.2
+  // Define explode offsets for different material types
+  const getExplodeOffset = (materialId: string): [number, number, number] => {
+    const explodeMap: Record<string, [number, number, number]> = {
+      // Front plate components
+      'frontPlateOutlineColor': [0, 0.2, 0.8],
+      'frontPlateLowerMaskColor': [0, -0.5, 0.7],
+      'frontPlateSideMasksColor': [0.8, 0, 0.5],
+      'frontPlateTouchpadColor': [0, 0.4, 1.2],
+      
+      // Main body
+      'backPlateColor': [0, 0, -1.0],
+      
+      // Buttons and controls
+      'actionButtonsColor': [0.7, 0.4, 0.8],
+      'directionalButtonsColor': [-0.7, 0.4, 0.8],
+      'triggersColor': [0, 0.8, 0.3],
+      'analogsColor': [0, 0.5, 0.6],
+      'optionsShareButtonColor': [0, 0.3, 0.7],
+      'psButtonColor': [0, 0.2, 1.5]
     }
-  })
-  
+    
+    return explodeMap[materialId] || [0, 0, 0]
+  }
+
   // Update materials when colors change or on hover
   useEffect(() => {
     if (!scene || !modelPreset) return
-    
+
     scene.traverse((child) => {
       // Type guard to check if object is a mesh with material
       if ('isMesh' in child && child.isMesh && 'material' in child && child.material) {
@@ -55,6 +73,14 @@ export function Configurator({ colors = {}, modelPreset }: ConfiguratorProps) {
           const materialConfig = modelPreset.materials.find(m => m.id === materialName)
           
           if (materialConfig) {
+            // Apply explode positioning
+            const [offsetX, offsetY, offsetZ] = getExplodeOffset(materialConfig.id)
+            mesh.position.set(
+              offsetX * explodeAmount,
+              offsetY * explodeAmount,
+              offsetZ * explodeAmount
+            )
+
             // Use the color from colors prop, or fall back to default
             const currentColor = colors[materialConfig.id] || materialConfig.defaultColor
             const finalColor = new Color(currentColor)
@@ -63,41 +89,118 @@ export function Configurator({ colors = {}, modelPreset }: ConfiguratorProps) {
             if (hovered) {
               finalColor.multiplyScalar(1.2)
             }
-            
-            // Update the material color
-            mesh.material.color.copy(finalColor)
 
+            // Check if this is a button material with base color texture
+            const isButtonMaterial = materialConfig.id === 'actionButtonsColor' || materialConfig.id === 'directionalButtonsColor'
+            const hasBaseTexture = mesh.material.map !== null
+            
+            if (isButtonMaterial && hasBaseTexture) {
+              // For button materials with textures, tint while preserving icons
+              if (currentColor === 'transparent') {
+                mesh.material.color.setHex(0xffffff)
+                mesh.material.transparent = true
+                mesh.material.opacity = 1.0
+              } else {
+                mesh.material.color.copy(finalColor)
+                mesh.material.transparent = true
+                mesh.material.opacity = 1.0
+                mesh.material.alphaTest = 0.5
+                
+                if (mesh.material.map) {
+                  mesh.material.map.minFilter = THREE.LinearMipmapLinearFilter
+                  mesh.material.map.magFilter = THREE.LinearFilter
+                }
+              }
+            } else {
+              // Update the material color for non-button materials
+              mesh.material.color.copy(finalColor)
+              
+              // Handle emissive materials
+              if (mesh.material.emissiveMap || mesh.material.emissive) {
+                mesh.material.emissive.copy(finalColor)
+                mesh.material.emissive.multiplyScalar(0.3)
+                
+                if (mesh.material.emissiveIntensity !== undefined) {
+                  mesh.material.emissiveIntensity = 0.3
+                }
+              }
+            }
+            
             // Apply material properties based on material type
             if (materialConfig.id === 'glass') {
-              // Special handling for glass materials
               mesh.material.transparent = true
               mesh.material.opacity = 0.8
               mesh.material.metalness = 0.9
               mesh.material.roughness = 0.1
+            } else if (materialConfig.id === 'frontPlateTouchpadColor') {
+              mesh.material.metalness = 0.1
+              mesh.material.roughness = 0.8
+              if (mesh.material.emissive) {
+                mesh.material.emissive.copy(finalColor)
+                mesh.material.emissive.multiplyScalar(0.2)
+              }
+            } else if (materialConfig.id === 'actionButtonsColor' || materialConfig.id === 'directionalButtonsColor') {
+              mesh.material.metalness = 0.1
+              mesh.material.roughness = 0.9
+              mesh.material.transparent = true
+              mesh.material.alphaTest = 0.1
+              
+              if (mesh.material.normalMap) {
+                mesh.material.normalScale.set(1.2, 1.2)
+              }
             } else {
-              // Standard material properties
               mesh.material.metalness = 0.5
               mesh.material.roughness = 0.2
             }
             
             mesh.material.envMapIntensity = hovered ? 1.5 : 1
 
-            // Handle texture maps if they exist
             if (mesh.material.normalMap) {
               mesh.material.normalScale.set(1, 1)
             }
             if (mesh.material.roughnessMap) {
-              mesh.material.roughnessMap.encoding = 3000 // sRGBEncoding
+              mesh.material.roughnessMap.encoding = 3000
             }
-          }
-
-          mesh.material.needsUpdate = true
-        } catch (error) {
-          console.error(`Error updating material for mesh: ${child.name}`, error)
+          } else {
+            // Handle unmapped materials
+            if (materialName === 'frontPlateOutlineColor') {
+              const fixedColor = new Color('#ffffff')
+              mesh.material.color.copy(fixedColor)
+              
+              const [offsetX, offsetY, offsetZ] = getExplodeOffset('frontPlateOutlineColor')
+              mesh.position.set(
+                offsetX * explodeAmount,
+                offsetY * explodeAmount,
+                offsetZ * explodeAmount
+              )
+            } else {
+              const meshName = child.name || 'unknown'
+              
+              let explodeOffset: [number, number, number] = [0, 0, 0]
+              if (meshName.includes('front') || meshName.includes('Front')) {
+                explodeOffset = [0, 0.1, 0.5]
+              } else if (meshName.includes('back') || meshName.includes('Back')) {
+                explodeOffset = [0, 0, -0.5]
+              } else if (meshName.includes('button') || meshName.includes('Button')) {
+                explodeOffset = [0, 0.3, 0.3]
+              }
+              
+              mesh.position.set(
+                explodeOffset[0] * explodeAmount,
+                explodeOffset[1] * explodeAmount,
+                explodeOffset[2] * explodeAmount
+              )
+            }
+            
+            mesh.material.metalness = 0.5
+            mesh.material.roughness = 0.2
+          }          mesh.material.needsUpdate = true
+        } catch {
+          // Silently handle material update errors
         }
       }
     })
-  }, [scene, hovered, colors, modelPreset])
+  }, [scene, hovered, colors, modelPreset, explodeAmount])
 
   if (!scene) {
     return (
@@ -118,7 +221,7 @@ export function Configurator({ colors = {}, modelPreset }: ConfiguratorProps) {
       ref={group}
       onPointerOver={() => setHovered(true)}
       onPointerOut={() => setHovered(false)}
-      rotation={modelPreset?.rotation || [0.2, 0, 0]}
+      rotation={modelPreset?.rotation || [0, 0, 0]}
       scale={modelPreset?.scale || [2, 2, 2]}
       position={modelPreset?.position || [0, 0, 0]}
     >

@@ -17,34 +17,58 @@ export interface ModelPreset {
   position?: [number, number, number]
 }
 
-export const MODEL_PRESETS: ModelPreset[] = [
-  {
-    id: 'ps5-dualsense',
+export const MODEL_PRESETS: ModelPreset[] = [  {
+    id: 'ps5-dualsense-modified',
     name: 'PlayStation 5 DualSense',
-    path: 'models/playstation_5_dualsense/scene.gltf',
-    description: 'Sony PlayStation 5 wireless controller',
-    materials: [
-      {
-        id: '1011',
-        name: 'Front Plate',
-        description: 'Controller front face and light bar',
+    path: 'models/playstation_5_dualsense/dualsense_controller.gltf',
+    description: 'Custom Sony PlayStation 5 wireless controller',materials: [      {        id: 'frontPlateLowerMaskColor',
+        name: 'Front Plate Lower',
+        description: 'Lower front plate section',
+        defaultColor: '#1a1a1a'
+      },
+      {        id: 'frontPlateSideMasksColor',
+        name: 'Front Plate Sides',
+        description: 'Side sections of front plate',
+        defaultColor: '#ffffff'
+      },      {        id: 'frontPlateTouchpadColor',
+        name: 'Touchpad',
+        description: 'Touchpad surface',
         defaultColor: '#ffffff'
       },
-      {
-        id: '1001',
-        name: 'Buttons',
-        description: 'Action buttons and D-pad',
-        defaultColor: '#303030'
-      },
-      {
-        id: '1002',
+      {        id: 'backPlateColor',
         name: 'Back Plate',
         description: 'Controller back shell',
         defaultColor: '#ffffff'
-      }
+      },      {        id: 'actionButtonsColor',
+        name: 'Action Buttons',
+        description: 'X, O, Triangle, Square buttons',
+        defaultColor: '#ffffff'
+      },{        id: 'directionalButtonsColor',
+        name: 'D-Pad',
+        description: 'Directional buttons',
+        defaultColor: '#ffffff'
+      },{        id: 'triggersColor',
+        name: 'Triggers',
+        description: 'L1, L2, R1, R2 triggers',
+        defaultColor: '#1a1a1a'
+      },
+      {        id: 'analogsColor',
+        name: 'Analog Sticks',
+        description: 'Left and right analog sticks',
+        defaultColor: '#333333'
+      },
+      {        id: 'optionsShareButtonColor',
+        name: 'Options/Share',
+        description: 'Options and Share buttons',
+        defaultColor: '#e0e0e0'
+      },      {        id: 'psButtonColor',
+        name: 'PS Button',
+        description: 'PlayStation logo button',
+        defaultColor: '#1a1a1a'
+      },
     ],
     scale: [2, 2, 2],
-    rotation: [0.2, 0, 0]
+    rotation: [0, Math.PI, 0]
   }
 ]
 

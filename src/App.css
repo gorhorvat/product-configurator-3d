@@ -37,12 +37,46 @@
   padding: 1.5rem;
   background: rgba(0, 0, 0, 0.8);
   color: white;
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
   z-index: 1000;
   backdrop-filter: blur(4px);
-  flex-wrap: wrap;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.color-controls-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.reset-button {
+  background: linear-gradient(135deg, #ff4757, #ff3742);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+}
+
+.reset-button:hover {
+  background: linear-gradient(135deg, #ff3742, #ff2d3a);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+}
+
+.reset-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(255, 71, 87, 0.3);
+}
+
+.color-controls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
 }
 
 .control-group {
@@ -87,9 +121,49 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.control-group input[type="color"]:focus {
-  outline: none;
-  border-color: rgba(255, 255, 255, 0.6);
+/* Button color controls with transparent/color toggle */
+.button-color-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.color-mode-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-button {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 50px;
+}
+
+.mode-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.mode-button.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.button-color-controls input[type="color"] {
+  width: 60px;
+  height: 30px;
 }
 
 /* Model selector styles */
@@ -148,6 +222,171 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+/* Explode controls panel */
+.explode-controls {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  color: white;
+  min-width: 250px;
+  z-index: 1001;
+  backdrop-filter: blur(4px);
+}
+
+.explode-controls-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.explode-controls-header h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.reset-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reset-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.explode-slider-container {
+  margin-bottom: 0.75rem;
+}
+
+.explode-label {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.explode-slider {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.explode-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.explode-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+.explode-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.explode-range-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 0.25rem;
+}
+
+.explode-description {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.explode-presets {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.preset-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.preset-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.preset-button:active {
+  transform: translateY(0);
+}
+
+/* Transparent color control styles */
+.transparent-color-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.transparent-option,
+.color-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.transparent-option input[type="radio"],
+.color-option input[type="radio"] {
+  margin: 0;
+}
+
+.color-picker-input {
+  width: 60px;
+  height: 30px;
+  margin-top: 0.25rem;
+}
+
 /* Mobile responsive design */
 @media (max-width: 768px) {
   .model-selector {
@@ -157,10 +396,25 @@
     min-width: auto;
   }
   
-  .color-controls {
+  .explode-controls {
+    top: auto;
+    bottom: 45vh;
+    right: 0.5rem;
+    left: 0.5rem;
+    min-width: auto;
+  }
+    .color-controls {
     padding: 1rem;
+  }
+  
+  .color-controls-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
-    flex-wrap: wrap;
+  }
+  
+  .reset-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.85rem;
   }
   
   .control-group {

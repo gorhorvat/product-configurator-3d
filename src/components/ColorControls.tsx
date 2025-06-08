@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import type { MaterialConfig } from './ModelSelector'
 
 export type DynamicColors = Record<string, string>
@@ -10,8 +10,8 @@ interface ColorControlsProps {
 }
 
 export function ColorControls({ materials, onChange, initialColors }: ColorControlsProps) {
-  // Initialize colors from materials' default colors
-  const getInitialColors = useCallback(() => {
+  // Memoize initial colors to prevent unnecessary recalculations
+  const initialColorsState = useMemo(() => {
     const colors: DynamicColors = {}
     materials.forEach(material => {
       colors[material.id] = initialColors?.[material.id] || material.defaultColor
@@ -19,36 +19,66 @@ export function ColorControls({ materials, onChange, initialColors }: ColorContr
     return colors
   }, [materials, initialColors])
 
-  const [colors, setColors] = useState<DynamicColors>(getInitialColors())
+  const [colors, setColors] = useState<DynamicColors>(initialColorsState)
 
-  // Update colors when materials change (model switch)
+  // Update colors when materials change
   useEffect(() => {
-    const newColors = getInitialColors()
-    setColors(newColors)
-    onChange(newColors)
-  }, [materials, getInitialColors, onChange])
+    setColors(initialColorsState)
+  }, [initialColorsState])
+
+  // Notify parent of color changes only when colors actually change
+  useEffect(() => {
+    // Only call onChange if colors have actually changed from initial state
+    const hasChanged = Object.keys(colors).some(key => 
+      colors[key] !== initialColorsState[key]
+    )
+    
+    if (hasChanged || Object.keys(colors).length > 0) {
+      onChange(colors)
+    }
+  }, [colors]) // Remove onChange from dependencies to prevent infinite loop
 
   const handleColorChange = useCallback((materialId: string, color: string) => {
-    const newColors = { ...colors, [materialId]: color }
-    setColors(newColors)
-    onChange(newColors)
-  }, [colors, onChange])
+    setColors(prevColors => ({
+      ...prevColors,
+      [materialId]: color
+    }))
+  }, [])
+
+  const handleReset = useCallback(() => {
+    const defaultColors: DynamicColors = {}
+    materials.forEach(material => {
+      defaultColors[material.id] = material.defaultColor
+    })
+    setColors(defaultColors)
+  }, [materials])
 
   return (
     <div className="color-controls">
-      {materials.map((material) => (
-        <div key={material.id} className="control-group">
-          <label>
-            <span className="material-name">{material.name}</span>
-            <span className="material-description">{material.description}</span>
-          </label>
-          <input
-            type="color"
-            value={colors[material.id] || material.defaultColor}
-            onChange={(e) => handleColorChange(material.id, e.target.value)}
-          />
-        </div>
-      ))}
+      <div className="color-controls-header">
+        <button 
+          className="reset-button"
+          onClick={handleReset}
+          title="Reset all colors to defaults"
+        >
+          Reset Colors
+        </button>
+      </div>
+      <div className="color-controls-grid">
+        {materials.map((material) => (
+          <div key={material.id} className="control-group">
+            <label>
+              <span className="material-name">{material.name}</span>
+              <span className="material-description">{material.description}</span>
+            </label>
+            <input
+              type="color"
+              value={colors[material.id] || material.defaultColor}
+              onChange={(e) => handleColorChange(material.id, e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

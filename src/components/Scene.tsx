@@ -1,9 +1,10 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, SoftShadows } from '@react-three/drei'
-import { Suspense, useCallback, useEffect, useState } from 'react'
+import { Suspense, useCallback, useState } from 'react'
 import { Configurator } from './Configurator.tsx'
 import { ColorControls, type DynamicColors } from './ColorControls.tsx'
 import { ModelSelector, MODEL_PRESETS } from './ModelSelector.tsx'
+import { ExplodeControls } from './ExplodeControls.tsx'
 
 // Loading fallback component
 function LoadingFallback() {
@@ -23,19 +24,23 @@ function Shadows() {
 export function Scene() {
   // Always use the PS5 controller (the only model available)
   const currentModel = MODEL_PRESETS[0]
-  const [colors, setColors] = useState<DynamicColors>({})
-
-  // Initialize colors when component mounts
-  useEffect(() => {
+  
+  // Initialize colors state with proper default values
+  const [colors, setColors] = useState<DynamicColors>(() => {
     const initialColors: DynamicColors = {}
     currentModel.materials.forEach(material => {
       initialColors[material.id] = material.defaultColor
     })
-    setColors(initialColors)
-  }, [])
+    return initialColors
+  })
+  const [explodeAmount, setExplodeAmount] = useState(0)
 
   const handleColorChange = useCallback((newColors: DynamicColors) => {
     setColors(newColors)
+  }, [])
+
+  const handleExplodeChange = useCallback((newExplodeAmount: number) => {
+    setExplodeAmount(newExplodeAmount)
   }, [])
   return (
     <div style={{ width: '100vw', height: '100vh' }}>
@@ -63,16 +68,21 @@ export function Scene() {
             intensity={0.5}
             castShadow
           />
-          <Configurator colors={colors} modelPreset={currentModel} />
-          <OrbitControls
+          <Configurator colors={colors} modelPreset={currentModel} explodeAmount={explodeAmount} />          <OrbitControls
             autoRotate={false}
-            minPolarAngle={Math.PI / 4}
-            maxPolarAngle={Math.PI / 1.5}
-            minDistance={1.5}
-            maxDistance={4}
+            minPolarAngle={Math.PI / 6}
+            maxPolarAngle={Math.PI / 1.2}
+            minDistance={1.0}
+            maxDistance={6}
+            enableDamping={true}
+            dampingFactor={0.05}
           />
         </Suspense>      </Canvas>
       <ModelSelector />
+      <ExplodeControls 
+        onExplodeChange={handleExplodeChange}
+        initialExplode={explodeAmount}
+      />
       <ColorControls 
         materials={currentModel.materials}
         onChange={handleColorChange}
