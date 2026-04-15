@@ -6,9 +6,10 @@ interface ToolbarProps {
   autoRotateEnabled: boolean
   onAutoRotateToggle: (enabled: boolean) => void
   onResetColors: () => void
+  modelName?: string
 }
 
-export function Toolbar({ explodeViewEnabled, onExplodeViewToggle, autoRotateEnabled, onAutoRotateToggle, onResetColors }: ToolbarProps) {
+export function Toolbar({ explodeViewEnabled, onExplodeViewToggle, autoRotateEnabled, onAutoRotateToggle, onResetColors, modelName }: ToolbarProps) {
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const configMenuRef = useRef<HTMLDivElement>(null)
 
@@ -42,7 +43,10 @@ export function Toolbar({ explodeViewEnabled, onExplodeViewToggle, autoRotateEna
   return (
     <div className="toolbar">
       <div className="toolbar-content">
-        <h1>Product Configurator</h1>
+        <h1>
+          Product Configurator
+          {modelName && <span className="toolbar-model-name"> — {modelName}</span>}
+        </h1>
       </div>
       <div className="toolbar-actions">
         <div className="config-menu-container" ref={configMenuRef}>
