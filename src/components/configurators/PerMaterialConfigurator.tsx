@@ -6,6 +6,7 @@ import { useThree } from '@react-three/fiber'
 import type { ModelPreset } from '../../data/modelPresets'
 import type { DynamicColors } from '../ColorControls'
 import { upgradeMeshTextures } from '../../three/textures'
+import { applyColorizeToMesh } from '../../three/colorize'
 import { useMeshSelection } from '../../hooks/useMeshSelection'
 import { SelectionGizmo } from '../SelectionGizmo'
 
@@ -19,6 +20,7 @@ interface Props {
   onDraggingChange?: (dragging: boolean) => void
   selectedPartId: string | null
   onSelectedPartChange?: (id: string | null) => void
+  colorizeMode?: boolean
 }
 
 // Renderer for GLTF models that are already authored with per-material tinting
@@ -33,6 +35,7 @@ export function PerMaterialConfigurator({
   onDraggingChange,
   selectedPartId,
   onSelectedPartChange,
+  colorizeMode = false,
 }: Props) {
   const group = useRef<Group>(null)
   const manualOffsetsRef = useRef<Map<string, Vector3>>(new Map())
@@ -198,9 +201,10 @@ export function PerMaterialConfigurator({
         mesh.material.metalness = 0.5
         mesh.material.roughness = 0.2
       }
+      applyColorizeToMesh(mesh, colorizeMode)
       mesh.material.needsUpdate = true
     })
-  }, [scene, hovered, colors, modelPreset, explodeAmount, maxAnisotropy, byUuid, selectedUuid, getExplodeVec])
+  }, [scene, hovered, colors, modelPreset, explodeAmount, maxAnisotropy, byUuid, selectedUuid, getExplodeVec, colorizeMode])
 
   if (!scene) {
     return (

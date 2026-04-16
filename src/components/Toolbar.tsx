@@ -11,6 +11,8 @@ interface ToolbarProps {
   onBackgroundColorChange: (color: string) => void
   selectionEnabled: boolean
   onSelectionToggle: (enabled: boolean) => void
+  colorizeMode: boolean
+  onColorizeToggle: (enabled: boolean) => void
 }
 
 export function Toolbar({
@@ -24,6 +26,8 @@ export function Toolbar({
   onBackgroundColorChange,
   selectionEnabled,
   onSelectionToggle,
+  colorizeMode,
+  onColorizeToggle,
 }: ToolbarProps) {
   const [isConfigOpen, setIsConfigOpen] = useState(false)
   const configMenuRef = useRef<HTMLDivElement>(null)
@@ -75,6 +79,18 @@ export function Toolbar({
             <path d="M9 19H5v-4" />
             <path d="M12 8v8" />
             <path d="M8 12h8" />
+          </svg>
+        </button>
+
+        <button
+          className={`config-button${colorizeMode ? ' is-active' : ''}`}
+          onClick={() => onColorizeToggle(!colorizeMode)}
+          aria-label={colorizeMode ? 'Disable full color mode' : 'Enable full color mode'}
+          aria-pressed={colorizeMode}
+          title={colorizeMode ? 'Full color mode: ON (dark textures fully recolor)' : 'Full color mode: OFF (tint multiplies base texture)'}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2C7 7 4 11 4 15a8 8 0 0 0 16 0c0-4-3-8-8-13z" />
           </svg>
         </button>
 

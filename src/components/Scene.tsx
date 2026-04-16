@@ -49,6 +49,7 @@ export function Scene() {
   const [selectionEnabled, setSelectionEnabled] = useState(false)
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
   const [orbitEnabled, setOrbitEnabled] = useState(true)
+  const [colorizeMode, setColorizeMode] = useState(false)
   const [colorPanelOpen, setColorPanelOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return !window.matchMedia('(max-width: 768px)').matches
@@ -95,6 +96,8 @@ export function Scene() {
         onBackgroundColorChange={setBackgroundColor}
         selectionEnabled={selectionEnabled}
         onSelectionToggle={handleSelectionToggle}
+        colorizeMode={colorizeMode}
+        onColorizeToggle={setColorizeMode}
       />
       <Canvas
         shadows
@@ -125,6 +128,7 @@ export function Scene() {
             onDraggingChange={handleDraggingChange}
             selectedPartId={selectedPartId}
             onSelectedPartChange={setSelectedPartId}
+            colorizeMode={colorizeMode}
           />
           <OrbitControls
             enabled={orbitEnabled}

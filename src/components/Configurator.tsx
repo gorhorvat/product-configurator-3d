@@ -12,6 +12,7 @@ interface ConfiguratorProps {
   onDraggingChange?: (dragging: boolean) => void
   selectedPartId?: string | null
   onSelectedPartChange?: (id: string | null) => void
+  colorizeMode?: boolean
 }
 
 // Dispatches to a concrete renderer based on loader + colorMode. Each
@@ -24,6 +25,7 @@ export function Configurator({
   onDraggingChange,
   selectedPartId = null,
   onSelectedPartChange,
+  colorizeMode = false,
 }: ConfiguratorProps) {
   if (modelPreset.loader === 'fbx') {
     return <FBXConfigurator colors={colors} modelPreset={modelPreset} explodeAmount={explodeAmount} />
@@ -43,6 +45,7 @@ export function Configurator({
       onDraggingChange={onDraggingChange}
       selectedPartId={selectedPartId}
       onSelectedPartChange={onSelectedPartChange}
+      colorizeMode={colorizeMode}
     />
   )
 }

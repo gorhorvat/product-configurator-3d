@@ -7,6 +7,7 @@ import type { ModelPreset } from '../../data/modelPresets'
 import type { DynamicColors } from '../ColorControls'
 import { upgradeMeshTextures } from '../../three/textures'
 import { collectMeshes, computeAutoFit, computeRadialDirections } from '../../three/meshUtils'
+import { applyColorizeToMesh } from '../../three/colorize'
 import { useMeshSelection } from '../../hooks/useMeshSelection'
 import { SelectionGizmo } from '../SelectionGizmo'
 
@@ -20,6 +21,7 @@ interface Props {
   onDraggingChange?: (dragging: boolean) => void
   selectedPartId: string | null
   onSelectedPartChange?: (id: string | null) => void
+  colorizeMode?: boolean
 }
 
 // Renderer for single-tint (body) and per-node-tinted GLB models. Auto-fits
@@ -34,6 +36,7 @@ export function BodyTintedConfigurator({
   onDraggingChange,
   selectedPartId,
   onSelectedPartChange,
+  colorizeMode = false,
 }: Props) {
   const modelPath = import.meta.env.BASE_URL + modelPreset.path
   const { scene: source } = useGLTF(modelPath)
@@ -144,6 +147,8 @@ export function BodyTintedConfigurator({
       if (Array.isArray(mesh.material)) mesh.material.forEach(applyToMat)
       else applyToMat(mesh.material)
 
+      applyColorizeToMesh(mesh, colorizeMode)
+
       // TransformControls drives the selected mesh's position directly — don't fight it.
       if (!isSelected) {
         const manual = manualOffsetsRef.current.get(mesh.uuid)
@@ -152,7 +157,7 @@ export function BodyTintedConfigurator({
         if (manual) mesh.position.add(manual)
       }
     })
-  }, [scene, hovered, colors, modelPreset, explodeAmount, byUuid, selectedUuid])
+  }, [scene, hovered, colors, modelPreset, explodeAmount, byUuid, selectedUuid, colorizeMode])
 
   if (!scene) {
     return (
