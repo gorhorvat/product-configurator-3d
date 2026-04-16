@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react'
-import type { MaterialConfig } from './ModelSelector'
+import type { MaterialConfig } from '../data/modelPresets'
 
 export type DynamicColors = Record<string, string>
 
@@ -8,9 +8,12 @@ interface ColorControlsProps {
   onChange: (colors: DynamicColors) => void
   initialColors?: DynamicColors
   onClose?: () => void
+  selectionEnabled?: boolean
+  selectedPartId?: string | null
+  onSelectPart?: (id: string | null) => void
 }
 
-export function ColorControls({ materials, onChange, initialColors, onClose }: ColorControlsProps) {
+export function ColorControls({ materials, onChange, initialColors, onClose, selectionEnabled = false, selectedPartId = null, onSelectPart }: ColorControlsProps) {
   // Memoize initial colors to prevent unnecessary recalculations
   const initialColorsState = useMemo(() => {
     const colors: DynamicColors = {}
@@ -67,19 +70,32 @@ export function ColorControls({ materials, onChange, initialColors, onClose }: C
         )}
       </div>
       <div className="color-controls-grid">
-        {materials.map((material) => (
-          <div key={material.id} className="control-group">
-            <label>
-              <span className="material-name">{material.name}</span>
-              <span className="material-description">{material.description}</span>
-            </label>
-            <input
-              type="color"
-              value={colors[material.id] || material.defaultColor}
-              onChange={(e) => handleColorChange(material.id, e.target.value)}
-            />
-          </div>
-        ))}
+        {materials.map((material) => {
+          const isSelected = selectionEnabled && selectedPartId === material.id
+          const classes = [
+            'control-group',
+            selectionEnabled ? 'is-selectable' : '',
+            isSelected ? 'is-selected' : '',
+          ].filter(Boolean).join(' ')
+          return (
+            <div
+              key={material.id}
+              className={classes}
+              onClick={selectionEnabled ? () => onSelectPart?.(isSelected ? null : material.id) : undefined}
+            >
+              <label>
+                <span className="material-name">{material.name}</span>
+                <span className="material-description">{material.description}</span>
+              </label>
+              <input
+                type="color"
+                value={colors[material.id] || material.defaultColor}
+                onChange={(e) => handleColorChange(material.id, e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )
+        })}
       </div>
     </div>
   )

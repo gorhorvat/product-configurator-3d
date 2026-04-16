@@ -6,21 +6,23 @@ A modern 3D product configurator built with React Three Fiber, featuring real-ti
 
 - **Model switcher** — dropdown to pick between multiple 3D models (Aline, Umber, PlayStation 5 DualSense).
 - **Per-part color customization** — tint individual parts of a model via color pickers. Each model defines its own list of parts.
-- **Explode view** — slider that separates a model's sub-meshes radially from the center so the internal structure is visible.
+- **Move-parts mode** — click a mesh on the model (or a part in the color list) to select it, then drag the gizmo to reposition. Right-click a part to snap it back. Selection is bidirectional between the 3D view and the parts list.
+- **Explode view** — slider that separates a model's sub-meshes so the internal structure is visible. GLB body/per-node models explode radially from the center; per-material models use fixed vectors from the preset.
 - **Auto-fit + re-centering** — GLB models are automatically sized and centered regardless of their export units.
-- **Hover highlight** and **orbit / auto-rotate** camera controls.
+- **Hover highlight**, **orbit / auto-rotate**, and configurable **background color**.
+- **HTML loading spinner** shown inside the Canvas while models stream in.
 - **TypeScript**, fully typed.
 
 ## Supported model types
 
-| Loader | Color mode | Behavior |
-| ------ | ---------- | -------- |
-| `gltf` / `.glb` | `per-material` | Per-material tinting keyed by the material name (used by the PS5 model). |
-| `gltf` / `.glb` | `per-node` | Per-part tinting: looks up each mesh's ancestor node name in the preset's material list. Material is cloned per mesh so parts can be tinted independently while embedded textures are preserved. Used by the Aline and Umber humanoid models. |
-| `gltf` / `.glb` | `body` | Single-color tint applied to every mesh in the model. |
-| `fbx` | `body` | Same as GLB body mode, plus ability to load external PBR textures (baseColor / normal / roughness / metallic) per preset. |
+| Loader | Color mode | Renderer | Behavior |
+| ------ | ---------- | -------- | -------- |
+| `gltf` / `.glb` | `per-material` | `PerMaterialConfigurator` | Per-material tinting keyed by the material name. Uses fixed explode vectors from `modelPreset.explodeMap`. Used by the PS5 model. |
+| `gltf` / `.glb` | `per-node` | `BodyTintedConfigurator` | Per-part tinting: looks up each mesh's ancestor node name in the preset's material list. Material is cloned per mesh so parts can be tinted independently while embedded textures are preserved. Used by the Aline and Umber models. |
+| `gltf` / `.glb` | `body` | `BodyTintedConfigurator` | Single-color tint applied to every mesh in the model. |
+| `fbx` | `body` | `FBXConfigurator` | Same as GLB body mode, plus ability to load external PBR textures (baseColor / normal / roughness / metallic) per preset. |
 
-All non-PS5 modes share a common `BodyTintedScene` renderer that handles auto-fit, re-centering, and radial explode offsets.
+Selection state, gizmo wiring, and event plumbing are shared across GLTF renderers via the `useMeshSelection` hook and `SelectionGizmo` component. Auto-fit and radial-offset math live in `src/three/meshUtils.ts`.
 
 ## Tech Stack
 
@@ -66,16 +68,28 @@ All non-PS5 modes share a common `BodyTintedScene` renderer that handles auto-fi
 
 ```
 public/
-└── models/                       # 3D assets (GLTF / GLB / FBX + textures)
+└── models/                            # 3D assets (GLTF / GLB / FBX + textures)
 
 src/
+├── data/
+│   └── modelPresets.ts                # MODEL_PRESETS data + ModelPreset / MaterialConfig types
+├── three/
+│   ├── textures.ts                    # 4K texture upgrade (anisotropy + trilinear filtering)
+│   └── meshUtils.ts                   # collectMeshes, computeAutoFit, computeRadialDirections
+├── hooks/
+│   └── useMeshSelection.ts            # Selection state + two-way parent sync + event handlers
 ├── components/
-│   ├── Configurator.tsx          # Top-level model renderer; dispatches to the right loader path
-│   ├── Scene.tsx                 # Canvas, lights, camera, per-model color state
-│   ├── ModelSelector.tsx         # Model presets (MODEL_PRESETS) + dropdown UI
-│   ├── ColorControls.tsx         # Per-part color pickers (driven by the preset's materials)
-│   ├── ExplodeControls.tsx       # Explode-view slider
-│   └── Toolbar.tsx               # Auto-rotate, explode toggle, reset-colors
+│   ├── Configurator.tsx               # Thin router — dispatches to a concrete renderer
+│   ├── configurators/
+│   │   ├── BodyTintedConfigurator.tsx # GLB body + per-node renderer
+│   │   ├── PerMaterialConfigurator.tsx# GLTF per-material renderer (e.g. PS5)
+│   │   └── FBXConfigurator.tsx        # FBX body renderer with external PBR textures
+│   ├── SelectionGizmo.tsx             # Wraps drei TransformControls for move-parts mode
+│   ├── Scene.tsx                      # Canvas, lights, camera, top-level state
+│   ├── ModelSelector.tsx              # Model dropdown UI (pure, no data)
+│   ├── ColorControls.tsx              # Per-part color pickers + list-based selection
+│   ├── ExplodeControls.tsx            # Explode-view slider + presets
+│   └── Toolbar.tsx                    # Background color, move-parts, auto-rotate, explode, config
 ├── App.tsx
 ├── App.css
 └── types.d.ts
@@ -84,7 +98,7 @@ src/
 ## Adding a new model
 
 1. Drop the model file under `public/models/<model_name>/`.
-2. Append a new entry to `MODEL_PRESETS` in `src/components/ModelSelector.tsx`:
+2. Append a new entry to `MODEL_PRESETS` in `src/data/modelPresets.ts`:
    ```ts
    {
      id: 'my-model',
@@ -97,6 +111,8 @@ src/
        { id: 'node_name_in_file', name: 'Part Label', description: '...', defaultColor: '#ffffff' },
        // ...
      ],
+     // Optional fixed-direction explode offsets (per-material renderers only):
+     // explodeMap: { node_name_in_file: [x, y, z], ... }
      // Optional FBX-only textures:
      // textures: { baseColor, normal, roughness, metallic }
    }

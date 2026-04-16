@@ -5,37 +5,34 @@ export interface ExplodeControlsProps {
   initialExplode?: number
 }
 
+const PRESETS: Array<{ value: number; label: string; title: string }> = [
+  { value: 0.25, label: '25%',  title: 'Partial explode view' },
+  { value: 0.5,  label: '50%',  title: 'Half exploded view' },
+  { value: 0.75, label: '75%',  title: 'Mostly exploded view' },
+  { value: 1.0,  label: '100%', title: 'Fully exploded view' },
+]
+
 export function ExplodeControls({ onExplodeChange, initialExplode = 0 }: ExplodeControlsProps) {
   const [explodeAmount, setExplodeAmount] = useState(initialExplode)
 
-  const handleSliderChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(event.target.value)
+  const setAmount = useCallback((value: number) => {
     setExplodeAmount(value)
     onExplodeChange(value)
-  }, [onExplodeChange])
-  const handleReset = useCallback(() => {
-    setExplodeAmount(0)
-    onExplodeChange(0)
   }, [onExplodeChange])
 
-  const handlePreset = useCallback((value: number) => {
-    setExplodeAmount(value)
-    onExplodeChange(value)
-  }, [onExplodeChange])
+  const handleSliderChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    setAmount(parseFloat(event.target.value))
+  }, [setAmount])
 
   return (
     <div className="explode-controls">
       <div className="explode-controls-header">
         <h3>Explode View</h3>
-        <button 
-          className="reset-button" 
-          onClick={handleReset}
-          title="Reset to assembled view"
-        >
+        <button className="reset-button" onClick={() => setAmount(0)} title="Reset to assembled view">
           Reset
         </button>
       </div>
-      
+
       <div className="explode-slider-container">
         <label htmlFor="explode-slider" className="explode-label">
           Explode Amount: {Math.round(explodeAmount * 100)}%
@@ -55,38 +52,20 @@ export function ExplodeControls({ onExplodeChange, initialExplode = 0 }: Explode
           <span>Exploded</span>
         </div>
       </div>
-        <div className="explode-description">
+      <div className="explode-description">
         Drag the slider to separate controller components and see the internal structure
       </div>
-        <div className="explode-presets">
-        <button 
-          className="preset-button" 
-          onClick={() => handlePreset(0.25)}
-          title="Partial explode view"
-        >
-          25%
-        </button>
-        <button 
-          className="preset-button" 
-          onClick={() => handlePreset(0.5)}
-          title="Half exploded view"
-        >
-          50%
-        </button>
-        <button 
-          className="preset-button" 
-          onClick={() => handlePreset(0.75)}
-          title="Mostly exploded view"
-        >
-          75%
-        </button>
-        <button 
-          className="preset-button" 
-          onClick={() => handlePreset(1.0)}
-          title="Fully exploded view"
-        >
-          100%
-        </button>
+      <div className="explode-presets">
+        {PRESETS.map(p => (
+          <button
+            key={p.value}
+            className="preset-button"
+            onClick={() => setAmount(p.value)}
+            title={p.title}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
     </div>
   )

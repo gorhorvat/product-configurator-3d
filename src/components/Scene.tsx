@@ -1,18 +1,19 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment, SoftShadows } from '@react-three/drei'
+import { OrbitControls, Environment, SoftShadows, Html } from '@react-three/drei'
 import { Suspense, useCallback, useMemo, useState } from 'react'
+import * as THREE from 'three'
 import { Configurator } from './Configurator.tsx'
 import { ColorControls, type DynamicColors } from './ColorControls.tsx'
-import { ModelSelector, MODEL_PRESETS, type ModelPreset } from './ModelSelector.tsx'
+import { ModelSelector } from './ModelSelector.tsx'
+import { MODEL_PRESETS, type ModelPreset } from '../data/modelPresets'
 import { ExplodeControls } from './ExplodeControls.tsx'
 import { Toolbar } from './Toolbar.tsx'
 
 function LoadingFallback() {
   return (
-    <mesh>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color="#666666" />
-    </mesh>
+    <Html center>
+      <div className="model-spinner" role="status" aria-label="Loading model" />
+    </Html>
   )
 }
 
@@ -33,7 +34,6 @@ export function Scene() {
     [currentModelId]
   )
 
-  // Keep a separate color map per model so switching back restores choices
   const [colorsByModel, setColorsByModel] = useState<Record<string, DynamicColors>>(() => {
     const init: Record<string, DynamicColors> = {}
     MODEL_PRESETS.forEach(p => { init[p.id] = buildDefaultColors(p) })
@@ -45,6 +45,10 @@ export function Scene() {
   const [explodeAmount, setExplodeAmount] = useState(0)
   const [explodeViewEnabled, setExplodeViewEnabled] = useState(false)
   const [autoRotateEnabled, setAutoRotateEnabled] = useState(true)
+  const [backgroundColor, setBackgroundColor] = useState('#4d4a47')
+  const [selectionEnabled, setSelectionEnabled] = useState(false)
+  const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
+  const [orbitEnabled, setOrbitEnabled] = useState(true)
   const [colorPanelOpen, setColorPanelOpen] = useState(() => {
     if (typeof window === 'undefined') return true
     return !window.matchMedia('(max-width: 768px)').matches
@@ -53,10 +57,6 @@ export function Scene() {
   const handleColorChange = useCallback((newColors: DynamicColors) => {
     setColorsByModel(prev => ({ ...prev, [currentModel.id]: newColors }))
   }, [currentModel.id])
-
-  const handleExplodeChange = useCallback((newExplodeAmount: number) => {
-    setExplodeAmount(newExplodeAmount)
-  }, [])
 
   const handleExplodeViewToggle = useCallback((enabled: boolean) => {
     setExplodeViewEnabled(enabled)
@@ -67,13 +67,19 @@ export function Scene() {
     setColorsByModel(prev => ({ ...prev, [currentModel.id]: buildDefaultColors(currentModel) }))
   }, [currentModel])
 
-  const handleAutoRotateToggle = useCallback((enabled: boolean) => {
-    setAutoRotateEnabled(enabled)
-  }, [])
-
   const handleModelChange = useCallback((modelId: string) => {
     setCurrentModelId(modelId)
     setExplodeAmount(0)
+  }, [])
+
+  const handleSelectionToggle = useCallback((enabled: boolean) => {
+    setSelectionEnabled(enabled)
+    setAutoRotateEnabled(!enabled)
+    setSelectedPartId(null)
+  }, [])
+
+  const handleDraggingChange = useCallback((dragging: boolean) => {
+    setOrbitEnabled(!dragging)
   }, [])
 
   return (
@@ -82,52 +88,61 @@ export function Scene() {
         explodeViewEnabled={explodeViewEnabled}
         onExplodeViewToggle={handleExplodeViewToggle}
         autoRotateEnabled={autoRotateEnabled}
-        onAutoRotateToggle={handleAutoRotateToggle}
+        onAutoRotateToggle={setAutoRotateEnabled}
         onResetColors={handleResetColors}
         modelName={currentModel.name}
+        backgroundColor={backgroundColor}
+        onBackgroundColorChange={setBackgroundColor}
+        selectionEnabled={selectionEnabled}
+        onSelectionToggle={handleSelectionToggle}
       />
       <Canvas
         shadows
         camera={{ position: [0, 0.2, 2], fov: 45 }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener('contextmenu', (e) => e.preventDefault())
+        }}
         gl={{
           antialias: true,
           alpha: false,
           depth: true,
-          preserveDrawingBuffer: true
-        }}>
+          preserveDrawingBuffer: true,
+        }}
+      >
+        <color attach="background" args={[backgroundColor]} />
         <Suspense fallback={<LoadingFallback />}>
           <Shadows />
           <Environment preset="studio" />
           <ambientLight intensity={0.3} />
-          <directionalLight
-            position={[5, 5, 5]}
-            intensity={1}
-            castShadow
-            shadow-mapSize={2048}
-          />
-          <directionalLight
-            position={[-5, 5, -5]}
-            intensity={0.5}
-            castShadow
-          />
+          <directionalLight position={[5, 5, 5]} intensity={1} castShadow shadow-mapSize={2048} />
+          <directionalLight position={[-5, 5, -5]} intensity={0.5} castShadow />
           <Configurator
             key={currentModel.id}
             colors={colors}
             modelPreset={currentModel}
             explodeAmount={explodeAmount}
+            selectionEnabled={selectionEnabled}
+            onDraggingChange={handleDraggingChange}
+            selectedPartId={selectedPartId}
+            onSelectedPartChange={setSelectedPartId}
           />
           <OrbitControls
-            autoRotate={autoRotateEnabled}
+            enabled={orbitEnabled}
+            autoRotate={autoRotateEnabled && orbitEnabled}
             autoRotateSpeed={1.0}
             minPolarAngle={Math.PI / 6}
             maxPolarAngle={Math.PI / 1.2}
             minDistance={1.0}
             maxDistance={6}
-            enableDamping={true}
+            enableDamping
             dampingFactor={0.05}
+            mouseButtons={selectionEnabled
+              ? { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY }
+              : { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN }}
           />
         </Suspense>
       </Canvas>
+
       <ModelSelector
         currentColors={colors}
         currentModelId={currentModel.id}
@@ -135,7 +150,7 @@ export function Scene() {
       />
       {explodeViewEnabled && (
         <ExplodeControls
-          onExplodeChange={handleExplodeChange}
+          onExplodeChange={setExplodeAmount}
           initialExplode={explodeAmount}
         />
       )}
@@ -157,6 +172,9 @@ export function Scene() {
           onChange={handleColorChange}
           initialColors={colors}
           onClose={() => setColorPanelOpen(false)}
+          selectionEnabled={selectionEnabled}
+          selectedPartId={selectedPartId}
+          onSelectPart={setSelectedPartId}
         />
       )}
     </div>

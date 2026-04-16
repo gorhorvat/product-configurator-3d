@@ -1,3 +1,17 @@
+/* Loading spinner shown in the Canvas while models load */
+.model-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: model-spinner-spin 0.8s linear infinite;
+}
+
+@keyframes model-spinner-spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Root container */
 #root {
   margin: 0;
@@ -16,12 +30,13 @@
   bottom: 0;
   width: 280px;
   padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.45);
   color: white;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   overflow-y: auto;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .color-controls-header {
@@ -73,16 +88,17 @@
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.45);
   color: white;
   cursor: pointer;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .color-controls-toggle:hover {
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0, 0, 0, 0.6);
   border-color: rgba(255, 255, 255, 0.45);
   transform: translateY(-1px);
 }
@@ -130,6 +146,25 @@
   gap: 1rem;
   min-width: auto;
   width: 100%;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.control-group.is-selectable {
+  cursor: pointer;
+}
+
+.control-group.is-selectable:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.control-group.is-selected {
+  background: rgba(255, 220, 70, 0.14);
+  border-color: rgba(255, 220, 70, 0.6);
+  box-shadow: 0 0 0 1px rgba(255, 220, 70, 0.25);
 }
 
 .control-group label {
@@ -220,14 +255,15 @@
   position: fixed;
   top: 5rem;
   left: 350px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 1rem;
   color: white;
   min-width: 280px;
   z-index: 1001;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .model-selector-header h3 {
@@ -299,14 +335,15 @@
   position: fixed;
   top: 5rem;
   right: 1rem;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 1rem;
   color: white;
   min-width: 250px;
   z-index: 1001;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .explode-controls-header {
@@ -465,11 +502,12 @@
   top: 0;
   left: 0;
   right: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(0, 0, 0, 0.45);
   color: white;
   z-index: 1020;
-  backdrop-filter: blur(4px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .toolbar-content {
@@ -501,7 +539,53 @@
   z-index: 1002;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.5rem;
+}
+
+.toolbar-bg-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toolbar-bg-picker:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-1px);
+}
+
+.toolbar-bg-swatch {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+}
+
+.toolbar-bg-picker input[type="color"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+}
+
+.config-button.is-active {
+  background: rgba(255, 220, 70, 0.25);
+  border-color: rgba(255, 220, 70, 0.8);
+  color: #fff3b0;
 }
 
 .config-menu-container {
@@ -535,12 +619,13 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 1rem;
   min-width: 250px;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   animation: configMenuSlideIn 0.2s ease-out;
   z-index: 1030;
@@ -714,23 +799,61 @@
   
   .toolbar-content {
     padding: 0.75rem 1rem;
+    justify-content: flex-start;
+    padding-right: 15rem;
   }
-  
+
   .toolbar-content h1 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
-  
+
   .toolbar-actions {
     right: 0.75rem;
+    gap: 0.35rem;
   }
-  
+
+  .toolbar-bg-picker,
+  .config-button {
+    width: 34px;
+    height: 34px;
+    padding: 0.3rem;
+  }
+
   .config-menu {
     min-width: 200px;
     right: -0.5rem;
   }
-  
+
   .config-toggle {
     font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .toolbar-content {
+    padding-right: 13rem;
+  }
+
+  .toolbar-content h1 {
+    font-size: 1rem;
+  }
+
+  .toolbar-model-name {
+    display: none;
+  }
+
+  .toolbar-actions {
+    gap: 0.25rem;
+  }
+
+  .toolbar-bg-picker,
+  .config-button {
+    width: 32px;
+    height: 32px;
   }
 }
 
